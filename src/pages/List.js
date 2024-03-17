@@ -1,18 +1,13 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePost, editPost } from "../state/action-creators/index";
-import {
-  BsSuitHeart,
-  BsSuitHeartFill,
-  BsPencil,
-  BsTrash,
-  BsCheckCircleFill,
-  BsXSquare,
-} from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import MDEditor from '@uiw/react-md-editor';
+import EditModal from "../components/Modal";
+import { FcViewDetails, FcEditImage, FcCancel } from "react-icons/fc";
+import MDEditor from "@uiw/react-md-editor";
+import About from "./About";
 
 const List = () => {
   const navigate = useNavigate();
@@ -28,6 +23,7 @@ const List = () => {
   });
   const [likedPosts, setLikedPosts] = useState([]);
   const [selectedTag, setSelectedTag] = useState("all");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const handleDeletePost = (index) => {
     dispatch(deletePost(index));
@@ -46,11 +42,14 @@ const List = () => {
       context: post.context,
       image: post.image,
     });
+    setShowEditModal(true); // Show the edit modal
   };
 
   const handleSaveEdit = () => {
     const { index, title, category, context, image } = editedPost;
+
     dispatch(editPost(index, title, category, context, image));
+
     setEditMode(false);
     setEditedPost({
       index: null,
@@ -62,6 +61,7 @@ const List = () => {
     toast.success("Post updated successfully!", {
       className: "toast-success",
     });
+    setShowEditModal(false); // Close the modal
   };
 
   const handleCancelEdit = () => {
@@ -72,7 +72,9 @@ const List = () => {
       category: "",
       context: "",
       image: "",
+      tags: [],
     });
+    setShowEditModal(false); // Hide the edit modal
   };
 
   const handleToggleLike = (index) => {
@@ -89,12 +91,15 @@ const List = () => {
     }
   };
 
-  const handleViewPost = (index) => {
-    navigate(`/blogs/${index}`);
-  };
-
   const handleTagClick = (tag) => {
     setSelectedTag(tag);
+  };
+
+  const handleChange = (field, value) => {
+    setEditedPost((prevEditedPost) => ({
+      ...prevEditedPost,
+      [field]: value,
+    }));
   };
 
   const allTags = posts.reduce((tags, post) => {
@@ -115,200 +120,111 @@ const List = () => {
 
   return (
     <>
-      <div className="bg-gray-100">
-        <h2 className="text-3xl font-bold m-2 flex justify-center font-karla ">
-          Your recent posts:
-        </h2>
-        <div className="flex justify-center flex-wrap gap-2 m-2">
-          <span
-            className="text-sm p-2 rounded-lg bg-gray-400 text-white font-bold"
-            onClick={() => handleTagClick("all")}
-          >
-            #All
-          </span>
-          {allTags.map((tag, index) => (
+      {filteredPosts && filteredPosts.length > 0 && (
+        <div className="bg-customGray">
+          <h2 className="text-3xl font-bold flex justify-center font-karla text-customBlue">
+            Your recent posts:
+          </h2>
+          <div className="flex justify-center flex-wrap gap-2 m-2">
+            {/* Tags code */}
             <span
-              key={index}
-              className={`text-sm p-2 rounded-lg bg-gray-400 text-white font-bold ${
-                selectedTag === tag ? "bg-gray-600" : ""
+              className={`cursor-pointer tag text-slate-200 ${
+                selectedTag === "all" && "font-bold"
               }`}
-              onClick={() => handleTagClick(tag)}
+              onClick={() => handleTagClick("all")}
             >
-              #{tag}
+              all
             </span>
-          ))}
-        </div>
-        <button
-          className="bg-purple-100 p-4 text-purple-800 font-bold rounded-lg block m-3  hover:bg-purple-400 transition-all duration-200"
-          onClick={() => navigate("/add-blogs")}
-        >
-          Add new blog
-        </button>
-        {filteredPosts && filteredPosts.length > 0 && (
+            {allTags.map((tag) => (
+              <span
+                key={tag}
+                className={`cursor-pointer tag text-slate-200 ${
+                  selectedTag === tag && "font-bold"
+                }`}
+                onClick={() => handleTagClick(tag)}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          <button
+            className="p-4 font-bold rounded-lg block m-3 bg-customGreen hover:bg-gray-300 transition-all duration-200 text-white"
+            onClick={() => navigate("/add-blogs")}
+          >
+            Add new blog
+          </button>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 m-4">
             {filteredPosts.map((post, index) => (
-              <div
-                key={index}
-                className="m-4 p-8 rounded-md shadow-md bg-white card"
-              >
-                {editMode && editedPost.index === index ? (
-                  <>
-                    {Object.entries(editedPost).map(([key, value]) => {
-                      if (key === "image") {
-                        return (
-                          <div key={key} className="mb-4">
-                            <label
-                              className="block mb-1 font-bold"
-                              htmlFor="image-input"
-                            >
-                              Image:
-                            </label>
-                            <input
-                              id="image-input"
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setEditedPost({
-                                    ...editedPost,
-                                    image: reader.result,
-                                  });
-                                };
-                                if (file) {
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </div>
-                        );
-                      } else if (key !== "context") {
-                        return (
-                          <input
-                            key={key}
-                            type="text"
-                            value={value}
-                            onChange={(e) =>
-                              setEditedPost({
-                                ...editedPost,
-                                [key]: e.target.value,
-                              })
-                            }
-                            className="mb-2 px-2 py-1 rounded border input"
-                          />
-                        );
-                      }
-                      return (
-                        <MDEditor
-                          key={key}
-                          data-color-mode="light"
-                          id="context"
-                          name="context"
-                          value={value}
-                          onChange={(e) =>
-                            setEditedPost({
-                              ...editedPost,
-                              [key]: e,
-                            })
-                          }
-                        />
-                      );
-                    })}
-                    <button
-                      className="m-2 p-3 roundedshadow-sm"
-                      onClick={handleSaveEdit}
+              <div key={index} className="m-4 p-8 rounded-md shadow-md card">
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-customBlue shadow-md border border-gray-200 rounded-lg max-w-sm">
+                    <div
+                      className="rounded-t-lg flex justify-center items-center"
+                      style={{ height: "200px" }} // Set the desired height for the image container
                     >
-                      <BsCheckCircleFill size={20} /> Save
-                    </button>
-                    <button
-                      className="m-2  p-3 rounded shadow-sm"
-                      onClick={handleCancelEdit}
-                    >
-                      <BsXSquare size={20} /> Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-bold font-mono text-center text-purple-900 title underline">
-                        {post.title}
-                        <button
-                          className="m-2 text-red-600 shadow-sm"
-                          onClick={() => handleToggleLike(index)}
-                        >
-                          {likedPosts.includes(index) ? (
-                            <BsSuitHeartFill size={20} />
-                          ) : (
-                            <BsSuitHeart size={20} />
-                          )}
-                        </button>
-                      </span>
-                      <div className="tag">
-                        {post.tags &&
-                          post.tags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="text-sm p-2 m-2 rounded-lg bg-gray-700 text-white font-thin "
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                      </div>
-                      <div className="tag m-2">
-                        <span className="text-sm p-2 rounded-lg bg-gray-400 text-white font-bold">
-                          {post.category}
-                        </span>
-                      </div>
-                      <div className="spacer h-5" />
-                      <span className="text-lg text-gray-800">
-                        {post.context.length > 100
-                          ? `${post.context.slice(0, 100)}...`
-                          : post.context}
-                      </span>
-
-                      {/* {post.image && <img src={post.image} alt="" className="max-w-full h-auto mb-4" />} */}
-                      <span>
-                        <button
-                          className="m-2 shadow-sm  p-2 rounded-sm  edit-button"
-                          onClick={() => handleEditPost(index)}
-                        >
-                          <BsPencil size={20} />
-                        </button>
-                        <button
-                          className="m-2 shadow-sm  p-2 rounded-sm delete-button"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Are you sure you want to delete this post?"
-                              )
-                            ) {
-                              handleDeletePost(index);
-                            }
-                          }}
-                        >
-                          <BsTrash size={20} />
-                        </button>
-                        <button
-                          className="bg-blue-500 text-white font-bold py-2 px-4 rounded shadow hover:bg-blue-600 transition-all duration-200"
-                          onClick={() => handleViewPost(index)}
-                        >
-                          Show More
-                        </button>
-                      </span>
+                      <img
+                        src={post.image}
+                        alt=""
+                        style={{ width: "40%", height: "auto" }} // Set width to 40% and height to auto
+                      />
                     </div>
-                  </>
-                )}
+                    <div className="p-5">
+                      <h5 className="text-customGreen font-bold text-4xl tracking-tight mb-3 text-center ">
+                        {post.title}
+                      </h5>
+                      <MDEditor.Markdown
+                        source={post.context.length>40 ? post.context.slice(0, 40) + " ..." : post.context} // Display first 40 characters
+                        data-color-mode="dark"
+                        style={{
+                          background: "#cae7eb",
+                          color: "black",
+                          padding: "1rem",
+                          borderRadius: "0.5rem",
+                        }}
+                      />
+                      <button
+                        className="m-2 bg-customGreen hover:bg-gray-300 text-white font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center "
+                        onClick={() => navigate(`/blogs/${index}`)}
+                      >
+                        <FcViewDetails className="mr-1" />View more
+                      </button>
+                      <button
+                        className="m-2 bg-customGreen hover:bg-gray-300 text-white font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center"
+                        onClick={() => handleEditPost(index)}
+                      >
+                        <FcEditImage className="mr-1" /> Edit
+                      </button>
+                      <button
+                        className="m-2 bg-customGreen hover:bg-gray-300 text-white font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center "
+                        onClick={() => handleDeletePost(index)}
+                      >
+                        <FcCancel className="mr-1" /> Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {filteredPosts && filteredPosts.length === 0 && <About header={"No blog posts yet."} />}
+
       <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={true}
       />
+      {showEditModal && (
+        // Conditionally render the modal
+        <EditModal
+          editedPost={editedPost}
+          setEditedPost={setEditedPost}
+          handleSaveEdit={handleSaveEdit}
+          handleCancelEdit={handleCancelEdit}
+        />
+      )}
     </>
   );
 };

@@ -16,11 +16,33 @@ code {
     monospace;
 }
 
-.tag {
+
+.tag::before,
+.tag::after {
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.3s ease;
+  position: relative;
   display: inline-block;
-  padding: 4px 8px;
-  
-  color: white;
-  font-weight: bold;
-  border-radius: 999px;
+}
+
+.tag::before {
+  content: "[";
+  transform: translateX(20px);
+  margin-right: 0.2em;
+}
+
+.tag::after {
+  content: "]";
+  transform: translateX(-20px);
+  margin-left: 0.2em;
+}
+
+.tag:hover {
+  color: #ddd;
+}
+
+.tag:hover::before,
+.tag:hover::after {
+  opacity: 1;
+  transform: translateX(0);
 }

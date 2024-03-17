@@ -17,7 +17,7 @@ function App() {
         <Routes>
           <Route exact path="/" element={<Home />} />
           <Route exact path="/add-blogs" element={<Blogs />} />
-          <Route exact path="/about" element={<About />} />
+          <Route exact path="/about" element={<About header={"Write down your thoughts away!"} />} />
           <Route eaxct path="/list" element={<List />} />
           <Route path="/blogs/:index" element={<BlogPost/>} />
         </Routes>
